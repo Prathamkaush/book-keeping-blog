@@ -2,9 +2,9 @@ import express from "express";
 import bodyParser from "body-parser";
 import pg from "pg";
 import session from "express-session";
-import pgSession from "connect-pg-simple";
-import dotenv from "dotenv";
 
+import dotenv from "dotenv";
+const pgSession = (await import("connect-pg-simple")).default;
 dotenv.config(); // Load .env variables
 
 // PostgreSQL client

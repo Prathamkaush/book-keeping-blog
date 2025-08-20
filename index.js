@@ -33,6 +33,7 @@ app.use(
     cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }, // 30 days
   })
 );
+app.use(express.static("public"));
 app.set("view engine", "ejs");
 app.set("views", "./views");  // make sure you have a views folder
 app.use(bodyParser.urlencoded({ extended: true }));

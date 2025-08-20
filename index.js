@@ -1,178 +1,147 @@
 import express from "express";
-import axios from "axios";
 import bodyParser from "body-parser";
 import pg from "pg";
 import session from "express-session";
-import 'dotenv/config';
+import pgSession from "connect-pg-simple";
+import dotenv from "dotenv";
 
-const db = new pg.Client({
+dotenv.config(); // Load .env variables
+
+// PostgreSQL client
+const db = new pg.Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
   password: process.env.DB_PASS,
   port: process.env.DB_PORT || 5432,
 });
-db.connect();
-  //user: "postgres",
-  //host: "localhost",
-  //database: "books",
-  //password: "Indu1975@123",
-  //port: 5432,
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(session({
-  secret: "superSecretKey", 
-  resave: false,
-  saveUninitialized: true
-}));
+// Session store
+app.use(
+  session({
+    store: new pgSession({
+      pool: db,
+      tableName: "session",
+    }),
+    secret: process.env.SESSION_SECRET || "superSecretKey",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
 
+// Middleware
 app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 app.use(express.static("public"));
-app.use(bodyParser.urlencoded({ extended: true }));
 
-let BOOKS = [
-  {
-    id: 1,
-    title: "IKIGAI",
-    isbn: 9780143130727,
-    summary: "my book summary",
-    date: new Date(),
-    rating: "4/5",
-    genres: "life changing",
-  },
-];
-
-
-async function getBooksById(itemId) {
-  const result = await db.query("SELECT m.id, m.title , m.summary , m.notes , o.date , o.rating , o.genre ,o.isbn FROM main as m JOIN other as o ON m.id = o.bookid;", [itemId]);
-  return result.rows[0]; 
-}
-
-
+// Home route
 app.get("/", async (req, res) => {
-  const result = await db.query(`
-    SELECT m.id, m.title, m.summary, m.notes, o.date, o.rating, o.genre, o.isbn
-    FROM main AS m
-    JOIN other AS o ON m.id = o.bookid;
-  `);
+  try {
+    const result = await db.query(`
+      SELECT m.id, m.title, m.summary, m.notes, o.date, o.rating, o.genre, o.isbn
+      FROM main AS m
+      JOIN other AS o ON m.id = o.bookid;
+    `);
 
-  const BOOKS = result.rows;
+    const booksWithCovers = result.rows.map(book => ({
+      ...book,
+      coverUrl: `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`,
+    }));
 
-  if (BOOKS.length === 0) {
-    return res.render("index", {
-      books: [],
-      imageUrl: null
-    });
+    res.render("index", { books: booksWithCovers, isAdmin: req.session.isAdmin || false });
+  } catch (err) {
+    console.error("Error fetching books:", err);
+    res.status(500).send("Server Error");
   }
-res.render("index", {
-    books: BOOKS,
-    isAdmin: req.session.isAdmin || false,
-    });
 });
 
+// Admin login
+const ADMIN_PASS = process.env.ADMIN_PASS || "Prath@1234!";
+
+app.post("/admin-login", (req, res) => {
+  const { password } = req.body;
+  if (password === ADMIN_PASS) {
+    req.session.isAdmin = true;
+    res.json({ success: true });
+  } else {
+    res.json({ success: false });
+  }
+});
+
+// Admin logout
+app.post("/admin-logout", (req, res) => {
+  req.session.destroy(err => {
+    if (err) return res.json({ success: false });
+    res.json({ success: true });
+  });
+});
+
+// Add new book form
 app.get("/new", (req, res) => {
-  
-  console.log("NEW BOOK FORM ROUTE HIT ✅");
-  res.render( "edit.ejs", {submit: "Add Book"});
+  if (!req.session.isAdmin) return res.redirect("/");
+  res.render("edit.ejs", { submit: "Add Book", isAdmin: true });
 });
 
-
+// Add new book
 app.post("/posts", async (req, res) => {
-  
+  if (!req.session.isAdmin) return res.status(403).send("Unauthorized");
+
   const { title, summary, notes, date, rating, genre, isbn } = req.body;
+
   try {
     await db.query("BEGIN");
 
-    // Insert into main table and get the new id
-const resultMain = await db.query(
-  "INSERT INTO main (title, summary, notes) VALUES ($1, $2, $3) RETURNING id",
-  [title, summary, notes]
-);
-const bookId = resultMain.rows[0].id;
+    const resultMain = await db.query(
+      "INSERT INTO main (title, summary, notes) VALUES ($1, $2, $3) RETURNING id",
+      [title, summary, notes]
+    );
+    const bookId = resultMain.rows[0].id;
 
-await db.query(
-  "INSERT INTO other (date, rating, genre, isbn, bookid) VALUES ($1, $2, $3, $4, $5)",
-  [ date, rating, genre,isbn,bookId]
-);
+    await db.query(
+      "INSERT INTO other (date, rating, genre, isbn, bookid) VALUES ($1, $2, $3, $4, $5)",
+      [date, rating, genre, isbn, bookId]
+    );
+
     await db.query("COMMIT");
-
-    // Fetch updated list of books for homepage
-    const allBooks = await db.query(`
-      SELECT m.id, m.title, m.summary, m.notes, o.date, o.rating, o.genre, o.isbn
-      FROM main AS m
-      JOIN other AS o ON m.id = o.bookid
-    `);
-
-    // Dynamic cover image URLs for all books
-    const booksWithCovers = allBooks.rows.map(book => ({
-      ...book,
-      coverUrl: `https://covers.openlibrary.org/b/isbn/${book.isbn}-M.jpg`
-    }));
-
-    res.render("index.ejs", { books: booksWithCovers ,isAdmin: req.session.isAdmin || false});
-
+    res.redirect("/");
   } catch (err) {
     await db.query("ROLLBACK");
     console.error("Error adding new book:", err);
-    res.status(500).send("Something went wrong.");
+    res.status(500).send("Something went wrong");
   }
 });
 
-app.get("/viewposts/:id", async (req, res) => {
+// Edit book form
+app.get("/editposts/:id", async (req, res) => {
+  if (!req.session.isAdmin) return res.redirect("/");
+
   const postId = req.params.id;
- try {
-    const result = await db.query(`
-      
-      SELECT m.id, m.title, m.summary, m.notes, 
-             o.date, o.rating, o.genre, o.isbn
-      FROM main AS m
-      JOIN other AS o ON m.id = o.bookid
-      WHERE m.id = $1
-    `, [postId]);
-  if (result.rows.length === 0) {
-      return res.status(404).send("Book not found");
-    }
+  try {
+    const result = await db.query(
+      `SELECT m.id, m.title, m.summary, m.notes, o.date, o.rating, o.genre, o.isbn
+       FROM main AS m
+       JOIN other AS o ON m.id = o.bookid
+       WHERE m.id = $1`,
+      [postId]
+    );
 
-    const book = result.rows[0]; // Get the matched book
+    if (result.rows.length === 0) return res.status(404).send("Book not found");
 
-    res.render("posts.ejs", { book,isAdmin: req.session.isAdmin || false});
-
-  } catch (error) {
-    console.error("Error fetching book:", error);
+    res.render("edit.ejs", { books: result.rows[0], submit: "Update Book", isAdmin: true });
+  } catch (err) {
+    console.error(err);
     res.status(500).send("Server Error");
   }
 });
 
-app.get("/editposts/:id" , async (req,res)=>{
-  const postId = req.params.id;
-  console.log(postId);
- try {
-    const result = await db.query(`
-      SELECT m.id, m.title, m.summary, m.notes, 
-             o.date, o.rating, o.genre, o.isbn
-      FROM main AS m
-      JOIN other AS o ON m.id = o.bookid
-      WHERE m.id = $1
-    `, [postId]);
-  if (result.rows.length === 0) {
-      return res.status(404).send("Book not found");
-    }
-const book = result.rows[0]; // Get the matched book
-    res.render("edit.ejs", { books : book ,
-      submit : "update book",
-      isAdmin: req.session.isAdmin || false
-    });
-
-  } catch (error) {
-    console.error("Error fetching book:", error);
-    res.status(500).send("Server Error");
-  }
-});
-
+// Update book
 app.post("/posts/:id", async (req, res) => {
+  if (!req.session.isAdmin) return res.status(403).send("Unauthorized");
+
   const bookId = req.params.id;
   const { title, summary, notes, isbn, genre, rating, date } = req.body;
 
@@ -184,101 +153,89 @@ app.post("/posts/:id", async (req, res) => {
 
     await db.query(
       "UPDATE other SET date = $1, rating = $2, genre = $3, isbn = $4 WHERE bookid = $5",
-      [date, rating , genre , isbn , bookId]
+      [date, rating, genre, isbn, bookId]
     );
 
     res.redirect("/");
   } catch (err) {
-    console.error("Error updating book:", err);
+    console.error(err);
     res.status(500).send("Something went wrong");
   }
 });
 
+// Delete book
 app.post("/delete", async (req, res) => {
+  if (!req.session.isAdmin) return res.status(403).send("Unauthorized");
+
   const bookId = req.body.deletbookid;
-console.log(bookId);
+
   try {
-    // First delete from 'other' (child table)
     await db.query("DELETE FROM other WHERE bookid = $1", [bookId]);
-
-    // Then delete from 'main' (parent table)
     await db.query("DELETE FROM main WHERE id = $1", [bookId]);
-
     res.redirect("/");
   } catch (err) {
-    console.error("Error deleting book:", err);
+    console.error(err);
     res.status(500).send("Something went wrong");
   }
 });
 
-app.get('/books/genre/:genre', async (req, res) => {
-  const genre = req.params.genre;
-  
-  try {
-    const result = await db.query(
-      `SELECT m.id, m.title, m.summary, m.notes, 
-              o.date, o.rating, o.genre, o.isbn
-       FROM main AS m
-       JOIN other AS o ON m.id = o.bookid
-       WHERE o.genre = $1`,
-      [genre]
-    );
-
-    const books = result.rows;
-    
-    res.render('books-by-genre.ejs', { books, genre,isAdmin: req.session.isAdmin || false }); // change to your template
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-});
-
+// Search books
 app.get("/search", async (req, res) => {
-  const query = req.query.q; // user input from search box
-
+  const query = req.query.q;
   try {
     const result = await db.query(
-      `SELECT m.id, m.title, m.summary, m.notes, 
-              o.date, o.rating, o.genre, o.isbn
+      `SELECT m.id, m.title, m.summary, m.notes, o.date, o.rating, o.genre, o.isbn
        FROM main AS m
        JOIN other AS o ON m.id = o.bookid
        WHERE m.title ILIKE $1 OR m.summary ILIKE $1 OR o.genre ILIKE $1`,
       [`%${query}%`]
     );
-
-    const books = result.rows;
-
-    res.render("search-results.ejs", { query, books ,isAdmin: req.session.isAdmin || false});
+    res.render("search-results.ejs", { query, books: result.rows, isAdmin: req.session.isAdmin || false });
   } catch (err) {
-    console.error("Error searching books:", err);
-    res.status(500).send("Something went wrong while searching.");
+    console.error(err);
+    res.status(500).send("Error searching books.");
   }
 });
 
-const ADMIN_PASS = "mySecret123";
-
-
-app.post("/admin-login", (req, res) => {
-  const { password } = req.body;
-  if (password === "Prath@1234!") {
-    req.session.isAdmin = true;
-    res.json({ success: true });
-  } else {
-    res.json({ success: false });
+// Books by genre
+app.get("/books/genre/:genre", async (req, res) => {
+  const genre = req.params.genre;
+  try {
+    const result = await db.query(
+      `SELECT m.id, m.title, m.summary, m.notes, o.date, o.rating, o.genre, o.isbn
+       FROM main AS m
+       JOIN other AS o ON m.id = o.bookid
+       WHERE o.genre = $1`,
+      [genre]
+    );
+    res.render("books-by-genre.ejs", { books: result.rows, genre, isAdmin: req.session.isAdmin || false });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
   }
 });
 
-app.post("/admin-logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Logout error:", err);
-      return res.json({ success: false });
-    }
-    res.json({ success: true });
-  });
+app.get("/viewposts/:id", async (req, res) => {
+  const postId = req.params.id;
+  try {
+    const result = await db.query(
+      `SELECT m.id, m.title, m.summary, m.notes, o.date, o.rating, o.genre, o.isbn
+       FROM main AS m
+       JOIN other AS o ON m.id = o.bookid
+       WHERE m.id = $1`,
+      [postId]
+    );
+
+    if (result.rows.length === 0) return res.status(404).send("Book not found");
+
+    res.render("posts.ejs", { book: result.rows[0], isAdmin: req.session.isAdmin || false });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
 });
 
-
-app.listen(PORT, '0.0.0.0', () => {
+// Start server
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });

@@ -15,7 +15,7 @@ db.connect();
 
 
 const app = express();
-const port = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(session({
   secret: "superSecretKey", 
@@ -274,6 +274,6 @@ app.post("/admin-logout", (req, res) => {
 });
 
 
-app.listen(3000, '0.0.0.0', () => {
-  console.log("Server running on 0.0.0.0:3000");
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
 });

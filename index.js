@@ -20,6 +20,7 @@ const db = new pg.Pool({
   database: process.env.DB_NAME,
   password: process.env.DB_PASS,
   port: Number(process.env.DB_PORT),
+   ssl: { rejectUnauthorized: false },
 });
 
 // Test DB connection

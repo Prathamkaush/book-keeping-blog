@@ -1,0 +1,78 @@
+<%- include('partials/header') %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📚 BOOKS</title>
+</head>
+<body>
+  <div class="container">
+    <div class="text-center mt-3">
+      <h1>Pratham Kaushik</h1>
+    </div>
+
+    <h1 class="mt-4">Books I've Read</h1>
+    <p>
+      Welcome to my blog! I share my thoughts on the books I read and recommend some great ones along the way.
+    </p>
+    <% if (isAdmin) { %>
+  <a id="newPostBtn" class="btn btn-primary mb-4" href="/new">New Book</a>
+<% } %>
+
+<hr>
+    <% books.forEach(function(book) { %>
+      <div class="row mb-5">
+        <!-- Left Column: Book Card -->
+        <div class="col-md-4 d-flex justify-content-center">
+          <div class="card" style="width: 13rem;">
+            <img 
+  src="https://covers.openlibrary.org/b/isbn/<%= book.isbn %>-M.jpg"
+  class="card-img-top"
+  alt="Cover for <%= book.title || 'Untitled' %>"
+  style="height: 300px; object-fit: cover;"
+>
+
+
+
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item"><strong>Date:</strong> <%= new Date(book.date).toDateString() %></li>
+              <li class="list-group-item"><strong>Genre:</strong> <%= book.genre %></li>
+              <li class="list-group-item"><strong>Rating:</strong> <%= book.rating %></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Right Column: Title and Summary -->
+        <div class="col-md-8">
+          <div class="card border-0 w-100">
+            <div class="card-body">
+              <h2 class="card-title">
+                <a href="/viewposts/<%= book.id %>"><%= book.title %></a>
+              </h2>
+              <h5 class="mt-4"><strong>Summary:</strong></h5>
+              <p class="card-text mt-3"><%= book.summary %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr>
+    <% }) %>
+  </div>
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const imgs = document.querySelectorAll('img.card-img-top');
+
+    imgs.forEach(img => {
+      img.addEventListener('load', function () {
+        if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+          img.src = '/images/fallbackimg.jpeg';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
+<%- include('partials/footer') %>

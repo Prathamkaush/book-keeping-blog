@@ -1,0 +1,25 @@
+<style>
+    html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+.site-footer {
+  background-color: black;
+  text-align: center;
+  padding: 15px;
+  border-top: 1px solid #ddd;
+  font-size: 14px;
+  color: #fff;
+  margin-top: auto;  /* 👈 pushes footer to the bottom */
+}
+
+</style>
+<footer class="site-footer">
+  <p>📚 My Book Blog &copy; <%= new Date().getFullYear() %> | Made with ❤️ by Pratham</p>
+</footer>

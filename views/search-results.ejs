@@ -1,0 +1,46 @@
+<%- include('partials/header') -%>
+<head>
+  <meta charset="UTF-8">
+  <title>Search results for "<%= query %>"</title>
+  <link rel="stylesheet" href="/styles/main.css">
+</head>
+<body>
+  <div class="container my-5">
+    <h1 class="mb-4 text-center">Search results for "<%= query %>"</h1>
+
+    <% if (books.length === 0) { %>
+      <div class="alert alert-warning text-center">
+        No books found for "<%= query %>"
+      </div>
+    <% } else { %>
+      <div class="row">
+        <% books.forEach(book => { %>
+          <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+              <% if (book.isbn) { %>
+                <img 
+  src="https://covers.openlibrary.org/b/isbn/<%= book.isbn %>-M.jpg"
+  class="card-img-top"
+  alt="Cover for <%= book.title || 'Untitled' %>"
+  style="height: 300px; object-fit: cover;"
+>
+              <% } else { %>
+                <img src="/images/fallback.jpg" class="card-img-top" alt="Default cover">
+              <% } %>
+              
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title"><%= book.title %></h5>
+                <p class="card-text text-muted"><%= book.genre %></p>
+                <p class="card-text">
+                  <%= book.summary.length > 100 ? book.summary.substring(0, 100) + "..." : book.summary %>
+                </p>
+                <a href="/viewposts/<%= book.id %>" class="btn btn-primary mt-auto">View Details</a>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</body>
+<%- include('partials/footer') -%>

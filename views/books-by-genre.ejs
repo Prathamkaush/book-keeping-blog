@@ -1,0 +1,40 @@
+<%- include('partials/header') %>
+<body>
+<div class="container mt-5 mb-5">
+  <!-- Page Title -->
+  <div class="text-center mb-4">
+    <h2>Books in <%= genre %> Genre</h2>
+  </div>
+
+  <!-- Flexbox Book Cards -->
+  <div class="d-flex flex-wrap gap-3 justify-content-start">
+    <% books.forEach(book => { %>
+      <div style="width: 220px;" class="card shadow-sm">
+        <img 
+          src="https://covers.openlibrary.org/b/isbn/<%= book.isbn %>-M.jpg"
+          class="card-img-top"
+          alt="Cover for <%= book.title || 'Untitled' %>"
+          style="height: 300px; object-fit: cover;"
+        >
+        <div class="card-body">
+          <h5 class="card-title"><a href="/viewposts/<%= book.id %>"><%= book.title %></a></h5>
+          <p class="card-text"><small class="text-muted"><%= book.genre %></small></p>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const imgs = document.querySelectorAll('img.card-img-top');
+    imgs.forEach(img => {
+      img.addEventListener('load', function () {
+        if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+          img.src = '/images/fallbackimg.jpeg';
+        }
+      });
+    });
+  });
+</script>
+</body>
+<%- include('partials/footer') %>

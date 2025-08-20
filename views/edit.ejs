@@ -1,0 +1,66 @@
+<%- include('partials/header') %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <% if (locals.books) { %>
+  <!-- Edit Form -->
+  <form id="editForm" class="m-3" method="post" action="/posts/<%= books.id %>">
+    <div class="mb-3">
+    <input class="form-control" type="text" name="title" value="<%= books.title %>" required>
+    </div>
+    <div class="mb-3">
+    <input class="form-control" type="text" name="isbn" value="<%= books.isbn %>" required>
+    </div>
+    <div class="mb-3">
+    <textarea class="form-control" name="summary" rows="5"><%= books.summary %></textarea>
+    </div><div class="mb-3">
+    <textarea class="form-control" name="notes" rows="10"><%= books.notes %></textarea>
+    </div>
+    <div class="mb-3">
+    <input class="form-control" type="date" name="date" value="<%= books.date.toISOString().split('T')[0] %>" required>
+    </div>
+    <div class="mb-3">
+    <input class="form-control" type="text" name="rating" value="<%= books.rating %>" required>
+    </div>
+    <div class="mb-3">
+    <input class="form-control" type="text" name="genre" value="<%= books.genre %>" required>
+    </div>
+    <button class="full-width btn btn-primary" type="submit"><%= submit %></button>
+  
+  </form>
+
+<% } else { %>
+  <!-- New Post Form -->
+  <form class="m-3" id="newPostForm" method="post" action="/posts">
+    <div class="mb-3">
+    <input type="text" class="form-control" name="title" placeholder="Title" required>
+    </div>
+    <div class="mb-3">
+    <input type="text" class="form-control" name="isbn" placeholder="ISBN" required>
+    </div>
+    <div class="mb-3">
+    <textarea name="summary" class="form-control" placeholder="Summary" required rows="5"></textarea>
+    </div>
+    <div class="mb-3">
+    <textarea name="notes" class="form-control" placeholder="Notes" required rows="10"></textarea>
+    </div>
+    <div class="mb-3">
+    <input type="date" class="form-control" name="date" required>
+    </div>
+    <div class="mb-3">
+    <input type="text" class="form-control" name="rating" placeholder="Rating (e.g., 4/5)" required>
+    <div class="mb-3">
+    <input type="text" class="form-control" name="genre" placeholder="Genre (e.g., Life-changing)" required>
+    </div>
+    <button class="full-width btn btn-primary" type="submit"><%= submit %></button>
+  </form>
+<% } %>
+
+</body>
+</html>
+<%- include('partials/footer') %>

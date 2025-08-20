@@ -1,0 +1,62 @@
+<%- include('partials/header') %>
+<div class="container-xl text-center mt-4 ">
+  <div class="row"> 
+  <div class="col"> 
+  <div class="card" style="width: 18rem;">
+  <img 
+  src="https://covers.openlibrary.org/b/isbn/<%= book.isbn %>-M.jpg"
+  class="card-img-top"
+  alt="Cover for <%= book.title || 'Untitled' %>"
+  style="height: 300px; object-fit: cover;">
+  
+  <ul class="list-group list-group-flush">
+    <li class="list-group-item"><strong>Date:</strong> <%= new Date(book.date).toDateString() %></li>
+    <li class="list-group-item"><strong>Genre:</strong> <%= book.genre %></li>
+    <li class="list-group-item"><strong>Rating:</strong> <%= book.rating %></li>
+    <li class="list-group-item"><strong>ISBN:</strong> <%= book.isbn %></li>
+  </ul>
+  <div class="card-body">
+    <div class="btn-group" role="group" aria-label="Basic example">
+  <a  class="card-link btn btn-primary m-1 rounded-pill" href="https://www.amazon.com/s?k=<%=book.isbn%>&tag=pratham-23">buy</a>
+  <% if (isAdmin) { %>
+  <a  class="card-link btn btn-primary m-1 rounded-pill" href="/editposts/<%=book.id%>">edit</a>
+  
+  <form  class="card-link " action="/delete" method="POST">
+      <input   type="hidden" name="deletbookid" value="<%= book.id %>">
+      <button  class="btn btn-primary m-1 rounded-pill" type="submit">Delete</button>
+    </form>
+  <%}%>  
+  </div>
+    </div>
+   </div>
+  </div>
+  <div class="col">
+    <h1 ><%= book.title %></h1>
+    <h5 ><strong>Summary</strong></h5>
+    <div class="overflow-y-visible p-2" style="max-height: 200px; word-break: break-word;">
+  <p class="mb-0"><%= book.summary %></p>
+</div>
+</div>
+  </div>
+</div> 
+  <hr>
+  <div class="container-fluid text-center">
+<h1 >My Notes</h1>
+  <div class="overflow-y-visible p-2" style="max-height: 200px; word-break: break-word;">
+  <p class="mb-0"><%= book.notes %></p>
+</div>
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const imgs = document.querySelectorAll('img.card-img-top');
+
+    imgs.forEach(img => {
+      img.addEventListener('load', function () {
+        if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+          img.src = '/images/fallbackimg.jpeg';
+        }
+      });
+    });
+  });
+</script>
+<%- include('partials/footer') %>

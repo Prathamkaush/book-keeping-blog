@@ -1,29 +1,35 @@
 import express from "express";
-import bodyParser from "body-parser";
 import pg from "pg";
-import session from "express-session";
-
 import dotenv from "dotenv";
-const pgSession = (await import("connect-pg-simple")).default;
-dotenv.config(); // Load .env variables
 
-// PostgreSQL client
+dotenv.config();
+
+import session from "express-session";
+import bodyParser from "body-parser";
+
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+
+// Import connect-pg-simple (CommonJS) via require
+const pgSession = require("connect-pg-simple")(session);
+
+// Postgres client
 const db = new pg.Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
   password: process.env.DB_PASS,
-  port: process.env.DB_PORT || 5432,
+  port: process.env.DB_PORT,
 });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Session store
+// Session middleware
 app.use(
   session({
     store: new pgSession({
-      pool: db,
+      pool: db, // Use pg Pool
       tableName: "session",
     }),
     secret: process.env.SESSION_SECRET || "superSecretKey",
@@ -32,12 +38,8 @@ app.use(
   })
 );
 
-// Middleware
-app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.set("view engine", "ejs");
-app.use(express.static("public"));
-
+app.use(express.json());
 // Home route
 app.get("/", async (req, res) => {
   try {

@@ -57,7 +57,7 @@ app.get("/", async (req, res) => {
     res.render("index", { books: booksWithCovers, isAdmin: req.session.isAdmin || false });
   } catch (err) {
     console.error("Error fetching books:", err);
-    res.status(500).send("Server Error");
+    res.status(500).send(" not a Server Error");
   }
 });
 

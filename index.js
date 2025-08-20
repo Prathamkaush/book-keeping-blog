@@ -3,16 +3,21 @@ import axios from "axios";
 import bodyParser from "body-parser";
 import pg from "pg";
 import session from "express-session";
+import 'dotenv/config';
 
 const db = new pg.Client({
-  user: "postgres",
-  host: "localhost",
-  database: "books",
-  password: "Indu1975@123",
-  port: 5432,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASS,
+  port: process.env.DB_PORT || 5432,
 });
 db.connect();
-
+  //user: "postgres",
+  //host: "localhost",
+  //database: "books",
+  //password: "Indu1975@123",
+  //port: 5432,
 
 const app = express();
 const PORT = process.env.PORT || 3000;

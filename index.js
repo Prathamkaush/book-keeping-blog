@@ -15,14 +15,9 @@ const pgSession = connectPgSimpleImport(session);
 
 // PostgreSQL pool
 const db = new pg.Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASS,
-  port: Number(process.env.DB_PORT),
-   ssl: { rejectUnauthorized: false },
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }, // required for Render
 });
-
 // Test DB connection
 db.connect()
   .then(() => console.log("Connected to PostgreSQL"))
@@ -38,7 +33,8 @@ app.use(
     cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }, // 30 days
   })
 );
-
+app.set("view engine", "ejs");
+app.set("views", "./views");  // make sure you have a views folder
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 // Home route
@@ -58,7 +54,7 @@ app.get("/", async (req, res) => {
     res.render("index", { books: booksWithCovers, isAdmin: req.session.isAdmin || false });
   } catch (err) {
     console.error("Error fetching books:", err);
-    res.status(500).send(" not a Server Error");
+    res.status(500).send("Server Error");
   }
 });
 

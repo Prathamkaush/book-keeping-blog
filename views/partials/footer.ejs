@@ -1,25 +1,45 @@
 <style>
-    html, body {
-  height: 100%;
-  margin: 0;
-}
+  html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+  }
 
-body {
-  display: flex;
-  flex-direction: column;
-}
 
-.site-footer {
-  background-color: black;
-  text-align: center;
-  padding: 15px;
-  border-top: 1px solid #ddd;
-  font-size: 14px;
-  color: #fff;
-  margin-top: auto;  /* 👈 pushes footer to the bottom */
-}
+  .site-footer {
+    background-color: black;
+    text-align: center;
+    padding: 15px;
+    border-top: 1px solid #ddd;
+    font-size: 14px;
+    color: #fff;
+    width: 100%;
+    margin-top: auto;
+  }
 
+  /* Responsive footer text */
+  .site-footer p {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  @media (max-width: 600px) {
+    .site-footer{
+      position: relative;
+      width: 100%;
+      top: 100%;
+      
+    }
+    .site-footer p {
+      font-size: 12px;
+      padding: 10px;
+      
+    }
+  }
 </style>
+
+
 <footer class="site-footer">
   <p>📚 My Book Blog &copy; <%= new Date().getFullYear() %> | Made with ❤️ by Pratham</p>
 </footer>
